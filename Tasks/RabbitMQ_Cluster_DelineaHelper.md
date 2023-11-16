@@ -1,9 +1,11 @@
 Delinea - Create a RabbitMQ Cluster of nodes. (Non-TLS)
 
 * Remove & Install RabbitMQ on the computer
-  * Open the RabbitMQ Helper Powershell window:
+  * Open the RabbitMQ Helper Powershell window
+
 Enable-RabbitMQManagement
   * We will remove RabbitMQ and then re-install it
+
 Uninstall-rabbitMQ
 Get-rabbitmqinstaller -usedelineamirror:$false
 Install-rabbitmq
