@@ -1,4 +1,3 @@
-$CyberArkURL = "https://your-cyberark-instance.com"  # Replace with your CyberArk instance URL
 #Ensure that you have the necessary permissions and access rights within the CyberArk environment to interact with the REST API.
 #Open an elevated PowerShell session.
 #Define the following variables at the beginning of your script or session:
