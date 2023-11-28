@@ -1,39 +1,64 @@
-# From Conagher Lepley
-
+$CyberArkURL = "https://your-cyberark-instance.com"  # Replace with your CyberArk instance URL
 #Ensure that you have the necessary permissions and access rights within the CyberArk environment to interact with the REST API.
 #Open an elevated PowerShell session.
-
 #Define the following variables at the beginning of your script or session:
 $CyberArkURL = "https://your-cyberark-instance.com"  # Replace with your CyberArk instance URL
-$Username = "your-username"                          # Replace with your username
-$Password = "your-password"                          # Replace with your password
-$SafeName = "your-safe-name"                         # Replace with the name of the safe from which you want to export passwords
-$OutputFilePath = "C:\Path\to\Output\File.csv"       # Replace with the desired file path where you want to save the exported passwords (ensure the file has a .csv extension)
+$Username = "" 
+$Password = ""
+#$SafeName = "CON_Windows_Clients"
+$SafeName = "CAN_Windows_Servers"
+$OutputFilePath = "C:\export.csv"
+$output=@()
 
-#Define a function to authenticate and obtain an access token for the CyberArk REST API:
-function Get-CyberArkAccessToken {
-    $RequestBody = @{
-        username = $Username
-        password = $Password
-    }
-    $AuthURI = "$CyberArkURL/PasswordVault/API/auth/ldap"
-    $AuthResponse = Invoke-RestMethod -Uri $AuthURI -Method Post -Body ($RequestBody | ConvertTo-Json) -ContentType "application/json"
-    return $AuthResponse.CyberArkToken
+$RequestBody = @{
+       username = $Username
+       password = $Password
 }
 
-#Define a function to retrieve the passwords from the specified safe:
-function Export-CyberArkSafePasswords {
-    $Token = Get-CyberArkAccessToken
-    $Headers = @{
-        "Authorization" = "Bearer $Token"
-        "Content-Type" = "application/json"
-    }
-    $SafesURI = "$CyberArkURL/PasswordVault/WebServices/PIMServices.svc/Safes"
-    $SafeURI = "$SafesURI('$SafeName')/Accounts"
-    $SafeResponse = Invoke-RestMethod -Uri $SafeURI -Headers $Headers
-    $Passwords = $SafeResponse.Accounts | Select-Object -Property UserName, Address, PasswordChangeInProcess, Disabled, LastPasswordUpdate
-    $Passwords | Export-Csv -Path $OutputFilePath -NoTypeInformation
+$AuthURI = "$CyberArkURL/PasswordVault/API/Auth/Cyberark/Logon"
+$AuthResponse = Invoke-RestMethod -Uri $AuthURI -Method Post -Body ($RequestBody | ConvertTo-Json) -ContentType "application/json"
+$Token = $AuthResponse
+   
+$Headers = @{
+   "Authorization" = $Token
+   "Content-Type" = "application/json"
 }
 
-#Call the Export-CyberArkSafePasswords function to export the passwords:
-Export-CyberArkSafePasswords
+# Retrieve Accounts ID
+$SafesURI = "$CyberArkURL/PasswordVault/api/accounts?filter=safename eq"+" "+$SafeName
+#$SafesURI = "$CyberArkURL/PasswordVault/api/accounts"
+$SafeResponse = Invoke-RestMethod -Uri $SafesURI -Headers $Headers
+$AccountID = $SafeResponse.value | Select-Object -Property id
+$ID=($AccountID -split "'r?'n")
+$ID=$ID.trim('@{id=}')
+            
+foreach ($i in $ID)
+{
+     $AccountValue = $SafeResponse.value | Where-Object id -EQ $i 
+     $AccountValue2 = $AccountValue.value | Select-Object -Property id,name,adrress,userName,platformId,safeName,secretManagement,createdTime
+
+     #Retrieve account password
+     $AccountURI="$CyberArkURL/PasswordVault/api/accounts/"+$i+"/Password/Retrieve"
+     $AccoutResponse= Invoke-RestMethod -Uri $AccountURI -Method POST -Headers $Headers
+     $AccountPassword = $AccoutResponse
+
+     # Export the values
+     $object = New-Object PSObject
+     Add-Member -InputObject $object NoteProperty ID $AccountValue.id
+     Add-Member -InputObject $object NoteProperty Name $AccountValue.name
+     Add-Member -InputObject $object NoteProperty adress $AccountValue.adress
+     Add-Member -InputObject $object NoteProperty UserName $AccountValue.UserName
+     Add-Member -InputObject $object NoteProperty PlatformID $AccountValue.platformId
+     Add-Member -InputObject $object NoteProperty SafeName $AccountValue.safeName
+     Add-Member -InputObject $object NoteProperty SecretManagement $AccountValue.secretManagement
+     Add-Member -InputObject $object NoteProperty CreateTime $AccountValue.createdTime
+     Add-Member -InputObject $object NoteProperty PWD $AccountPassword
+
+     $output+= $object
+}        
+
+$output | Export-Csv -Path $OutputFilePath -NoTypeInformation
+                            
+            
+              
+            
