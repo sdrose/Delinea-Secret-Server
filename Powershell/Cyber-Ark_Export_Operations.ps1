@@ -31,8 +31,12 @@ $SafesURI = "$CyberArkURL/PasswordVault/api/accounts?offset=100&limit=100"
   ## $SafesURI = "$CyberArkURL/PasswordVault/api/accounts?limit=100"
 $SafeResponse = Invoke-RestMethod -Uri $SafesURI -Headers $Headers
 $AccountID = $SafeResponse.value | Select-Object -Property id
-$ID=($AccountID -split "'r?'n")
-$ID=$ID.trim('@{id=}')
+ ##$ID=($AccountID -split "'r?'n")
+ ##$ID=$ID.trim('@{id=}')
+
+# Can I reduce the above 2 lines into the below single line?  If doesn't work, then swap in the above 2 lines and remove the below line ...
+$ID=$AccountID.split("'r?'n").trim('@{id=}')
+ ##$ID=($AccountID -split "'r?'n").trim('@{id=}')
 
 foreach ($i in $ID)
 {
