@@ -65,5 +65,6 @@ foreach ($i in $ID)
 
     $output+= $object
     ## $output  | Export-Csv -Path $OutputFilePath -NoTypeInformation ## I think this should be OUTSIDE the Foreach{} block
+    $output  | Export-Csv -Path $OutputFilePath -NoTypeInformation 
 }
-$output  | Export-Csv -Path $OutputFilePath -NoTypeInformation 
+
